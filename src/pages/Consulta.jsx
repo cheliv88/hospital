@@ -3,6 +3,17 @@ import { FaEdit } from 'react-icons/fa';
 import { TopBar } from '../components/TopBar';
 import { SearchModal } from '../components/SearchModal';
 
+const FormCard = ({ title, children }) => (
+  <div className="mb-5 bg-white/80 backdrop-blur-md rounded-2xl border border-white shadow-sm overflow-hidden">
+    <div className="px-5 py-3.5 border-b border-[#a370a3]/10">
+      <h3 className="text-[16px] font-black text-[#c0392b] tracking-wide">{title}</h3>
+    </div>
+    <div className="p-5 flex flex-col gap-4">
+      {children}
+    </div>
+  </div>
+);
+
 export const Consulta = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -32,6 +43,7 @@ export const Consulta = () => {
 
   const handleNuevo = () => {
     if(window.confirm('¿Limpiar formulario para una nueva consulta?')) {
+      // TODO: Implementar lógica para limpiar el formulario
     }
   };
 
@@ -58,23 +70,11 @@ export const Consulta = () => {
     setIsSearchOpen(false);
   };
 
-  
   const labelClass = "text-[13px] font-extrabold text-[#2d1b2d] md:w-44 shrink-0 flex items-center";
   const labelSecondaryClass = "text-[13px] font-extrabold text-[#2d1b2d] md:ml-4 shrink-0 flex items-center";
   
   const inputClass = "w-full px-3.5 py-2 text-[14px] rounded-xl border-2 border-[#e0d4e3] bg-white text-[#2d1b2d] font-semibold placeholder-[#a391a3] hover:border-[#c2abc5] focus:outline-none focus:ring-4 focus:ring-[#a370a3]/20 focus:border-[#a370a3] transition-all shadow-sm";
   const selectClass = `${inputClass} appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%238e5c8e%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.2em_1.2em] bg-no-repeat bg-[position:right_1rem_center] pr-10`;
-
-  const FormCard = ({ title, children }) => (
-    <div className="mb-5 bg-white/80 backdrop-blur-md rounded-2xl border border-white shadow-sm overflow-hidden">
-      <div className="px-5 py-3.5 border-b border-[#a370a3]/10">
-        <h3 className="text-[16px] font-black text-[#c0392b] tracking-wide">{title}</h3>
-      </div>
-      <div className="p-5 flex flex-col gap-4">
-        {children}
-      </div>
-    </div>
-  );
 
   return (
     <div className="h-full flex flex-col relative">
