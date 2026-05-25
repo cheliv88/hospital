@@ -29,7 +29,7 @@ export const Consulta = () => {
     empresa: '',
     obraSocial: '',
     numeroAfiliado: '',
-    fecha: '2026-04-18',
+    fecha: '2026-04-18', // Fecha actualizada
     servicio: '',
     especialidad: '',
     profesional: '',
@@ -46,7 +46,6 @@ export const Consulta = () => {
 
   const handleNuevo = () => {
     if(window.confirm('¿Limpiar formulario para una nueva consulta?')) {
-      // Reemplazamos el comentario "TODO" por la lógica real que limpia el formulario
       setFormData(estadoInicial);
     }
   };
@@ -129,4 +128,78 @@ export const Consulta = () => {
             </select>
             
             <label className={labelSecondaryClass}>Número Doc.</label>
-            <input type="text" name="numeroDocumento" value
+            <input type="text" name="numeroDocumento" value={formData.numeroDocumento} onChange={handleInputChange} className={`${inputClass} flex-1`} />
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+            <label className={labelClass}>H.C.</label>
+            <input type="text" name="numeroHistoriaClinica" value={formData.numeroHistoriaClinica} onChange={handleInputChange} className={`${inputClass} md:w-48`} />
+            
+            <label className={labelSecondaryClass}>H.C. Anterior</label>
+            <input type="text" name="numeroHistoriaClinicaAnterior" value={formData.numeroHistoriaClinicaAnterior} onChange={handleInputChange} className={`${inputClass} flex-1`} />
+          </div>
+        </FormCard>
+
+        <FormCard title="Datos Laborales y de Obra Social">
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+            <label className={labelClass}>Empresa</label>
+            <input type="text" name="empresa" value={formData.empresa} onChange={handleInputChange} className={`${inputClass} flex-1`} />
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+            <label className={labelClass}>Obra Social</label>
+            <input type="text" name="obraSocial" value={formData.obraSocial} onChange={handleInputChange} className={`${inputClass} flex-1 md:w-auto`} />
+            
+            <label className={labelSecondaryClass}>N° Afiliado</label>
+            <input type="text" name="numeroAfiliado" value={formData.numeroAfiliado} onChange={handleInputChange} className={`${inputClass} flex-1 md:w-auto`} />
+          </div>
+        </FormCard>
+
+        <FormCard title="Datos de Consulta">
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+            <label className={labelClass}>Fecha</label>
+            <input type="date" name="fecha" value={formData.fecha} onChange={handleInputChange} className={`${inputClass} md:w-64`} />
+            
+            <label className={labelSecondaryClass}>Prioridad</label>
+            <select name="prioridad" value={formData.prioridad} onChange={handleInputChange} className={`${selectClass} flex-1`}>
+              <option>Sin prioridad</option>
+              <option>Urgencia</option>
+              <option>Emergencia</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+            <label className={labelClass}>Servicio</label>
+            <input type="text" name="servicio" value={formData.servicio} onChange={handleInputChange} className={`${inputClass} flex-1`} />
+            
+            <label className={labelSecondaryClass}>Especialidad</label>
+            <input type="text" name="especialidad" value={formData.especialidad} onChange={handleInputChange} className={`${inputClass} flex-1`} />
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+            <label className={labelClass}>Profesional</label>
+            <input type="text" name="profesional" value={formData.profesional} onChange={handleInputChange} className={`${inputClass} flex-1`} />
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+            <label className={labelClass}>Motivo Consulta</label>
+            <select name="motivoConsulta" value={formData.motivoConsulta} onChange={handleInputChange} className={`${selectClass} flex-1`}>
+              <option>Particular</option>
+              <option>Obra Social</option>
+              <option>ART</option>
+              <option>Accidente</option>
+            </select>
+          </div>
+        </FormCard>
+
+      </div>
+
+      <SearchModal 
+        isOpen={isSearchOpen} 
+        onClose={() => setIsSearchOpen(false)}
+        onSelect={handleBuscarPaciente}
+      />
+
+    </div>
+  );
+};
