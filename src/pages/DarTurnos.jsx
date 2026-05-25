@@ -3,7 +3,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { FaPlus } from 'react-icons/fa'; // Limpiamos los íconos que no usabas
+import { FaPlus } from 'react-icons/fa';
 import { useAuthStore } from '../store/authStore'; 
 import { SearchModal } from '../components/SearchModal'; 
 import { SuccessModal } from '../components/SuccessModal'; 
@@ -129,7 +129,10 @@ export const DarTurnos = () => {
       const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` }});
       if (res.ok) return await res.json();
       return [];
-    } catch (error) { return []; }
+    } catch { 
+      // CORRECCIÓN: Se quitó el (error) para que ESLint no falle por variable sin usar
+      return []; 
+    }
   };
 
   const asignarTurno = async (persona) => {
