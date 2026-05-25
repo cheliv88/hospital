@@ -17,7 +17,8 @@ const FormCard = ({ title, children }) => (
 export const Consulta = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  const [formData, setFormData] = useState({
+  // Guardamos el estado inicial en una constante para poder reutilizarlo
+  const estadoInicial = {
     nombreCompleto: '',
     fechaNacimiento: '',
     sexo: 'M',
@@ -34,7 +35,9 @@ export const Consulta = () => {
     profesional: '',
     motivoConsulta: 'Particular',
     prioridad: 'Sin prioridad'
-  });
+  };
+
+  const [formData, setFormData] = useState(estadoInicial);
 
   const handleInputChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -43,7 +46,8 @@ export const Consulta = () => {
 
   const handleNuevo = () => {
     if(window.confirm('¿Limpiar formulario para una nueva consulta?')) {
-      // TODO: Implementar lógica para limpiar el formulario
+      // Reemplazamos el comentario "TODO" por la lógica real que limpia el formulario
+      setFormData(estadoInicial);
     }
   };
 
@@ -125,95 +129,4 @@ export const Consulta = () => {
             </select>
             
             <label className={labelSecondaryClass}>Número Doc.</label>
-            <input type="text" name="numeroDocumento" value={formData.numeroDocumento} onChange={handleInputChange} className={`${inputClass} flex-1`} />
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-            <label className={labelClass}>Número historia clínica</label>
-            <input type="text" name="numeroHistoriaClinica" value={formData.numeroHistoriaClinica} onChange={handleInputChange} className={`${inputClass} md:w-48`} />
-            
-            <label className={labelSecondaryClass}>Número H.C. anterior</label>
-            <input type="text" name="numeroHistoriaClinicaAnterior" value={formData.numeroHistoriaClinicaAnterior} onChange={handleInputChange} className={`${inputClass} flex-1`} />
-          </div>
-        </FormCard>
-
-        <FormCard title="Datos Laborales y de Obra Social">
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-            <label className={labelClass}>Empresa</label>
-            <input type="text" name="empresa" value={formData.empresa} onChange={handleInputChange} className={`${inputClass} flex-1`} />
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-            <label className={labelClass}>Obra Social</label>
-            <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4">
-              <select name="obraSocial" value={formData.obraSocial} onChange={handleInputChange} className={`${selectClass} md:w-64`}>
-                <option value="">Sin dato cargado...</option>
-                <option value="IOMA">IOMA</option>
-                <option value="PAMI">PAMI</option>
-              </select>
-              <input type="text" name="numeroAfiliado" value={formData.numeroAfiliado} onChange={handleInputChange} className={`${inputClass} flex-1`} placeholder="Nro Afiliado..." />
-            </div>
-          </div>
-        </FormCard>
-
-        <FormCard title="Datos de Consulta">
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-            <label className={labelClass}>Fecha</label>
-            <input type="date" name="fecha" value={formData.fecha} onChange={handleInputChange} className={`${inputClass} md:w-64`} />
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-            <label className={labelClass}>Servicio</label>
-            <select name="servicio" value={formData.servicio} onChange={handleInputChange} className={`${selectClass} md:w-80`}>
-              <option value="">Seleccionar...</option>
-              <option value="1">Guardia General</option>
-              <option value="2">Pediatría</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-            <label className={labelClass}>Especialidad</label>
-            <select name="especialidad" value={formData.especialidad} onChange={handleInputChange} className={`${selectClass} md:w-80`}>
-              <option value="">Seleccionar...</option>
-              <option value="1">Clínica Médica</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-            <label className={labelClass}>Profesional</label>
-            <select name="profesional" value={formData.profesional} onChange={handleInputChange} className={`${selectClass} md:w-80`}>
-              <option value="">Seleccionar...</option>
-              <option value="1">Dr. House</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-            <label className={labelClass}>Motivo Consulta</label>
-            <select name="motivoConsulta" value={formData.motivoConsulta} onChange={handleInputChange} className={`${selectClass} md:w-80`}>
-              <option value="Particular">Particular</option>
-              <option value="Derivacion">Derivación</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-            <label className={labelClass}>Prioridad</label>
-            <select name="prioridad" value={formData.prioridad} onChange={handleInputChange} className={`${selectClass} md:w-80`}>
-              <option value="Sin prioridad">Sin prioridad</option>
-              <option value="Alta">Alta</option>
-            </select>
-          </div>
-        </FormCard>
-
-      </div>
-
-      <SearchModal 
-        isOpen={isSearchOpen} 
-        onClose={() => setIsSearchOpen(false)} 
-        onSearch={handleBuscarPaciente} 
-        title="Buscar Paciente" 
-        placeholder="Ingrese Nro. Documento o Nombre..." 
-      />
-
-    </div>
-  );
-};
+            <input type="text" name="numeroDocumento" value
