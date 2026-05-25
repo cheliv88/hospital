@@ -3,6 +3,8 @@ import { FaEdit } from 'react-icons/fa';
 import { TopBar } from '../components/TopBar';
 import { SearchModal } from '../components/SearchModal';
 
+// --- ¡AQUÍ ESTÁ LA MAGIA! ---
+// Componente FormCard movido AFUERA de la función Consulta
 const FormCard = ({ title, children }) => (
   <div className="mb-5 bg-white/80 backdrop-blur-md rounded-2xl border border-white shadow-sm overflow-hidden">
     <div className="px-5 py-3.5 border-b border-[#a370a3]/10">
@@ -13,12 +15,14 @@ const FormCard = ({ title, children }) => (
     </div>
   </div>
 );
+// ----------------------------
 
 export const Consulta = () => {
+  // Estado para el modal de búsqueda genérico
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // Guardamos el estado inicial en una constante para poder reutilizarlo
-  const estadoInicial = {
+  // Estado con TODOS los campos que aparecen en la imagen
+  const [formData, setFormData] = useState({
     nombreCompleto: '',
     fechaNacimiento: '',
     sexo: 'M',
@@ -29,24 +33,23 @@ export const Consulta = () => {
     empresa: '',
     obraSocial: '',
     numeroAfiliado: '',
-    fecha: '2026-04-18', // Fecha actualizada
+    fecha: '2026-04-18', // Fecha del ejemplo de la foto
     servicio: '',
     especialidad: '',
     profesional: '',
     motivoConsulta: 'Particular',
     prioridad: 'Sin prioridad'
-  };
-
-  const [formData, setFormData] = useState(estadoInicial);
+  });
 
   const handleInputChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setFormData({ ...formData, [e.target.name]: value });
   };
 
+  // Acciones conectadas al TopBar
   const handleNuevo = () => {
     if(window.confirm('¿Limpiar formulario para una nueva consulta?')) {
-      setFormData(estadoInicial);
+      // Reiniciarías los campos aquí
     }
   };
 
@@ -61,6 +64,7 @@ export const Consulta = () => {
   };
 
   const handleBuscarPaciente = (valorBuscado) => {
+    // Al buscar en el modal, cargamos los datos del paciente
     setFormData({ 
       ...formData, 
       nombreCompleto: 'Pérez, Juan Carlos',
@@ -70,9 +74,10 @@ export const Consulta = () => {
       obraSocial: 'IOMA',
       numeroAfiliado: '123456789'
     });
-    setIsSearchOpen(false);
+    setIsSearchOpen(false); // Cierra el modal
   };
 
+  // CLASES DE ESTILO PREMIUM
   const labelClass = "text-[13px] font-extrabold text-[#2d1b2d] md:w-44 shrink-0 flex items-center";
   const labelSecondaryClass = "text-[13px] font-extrabold text-[#2d1b2d] md:ml-4 shrink-0 flex items-center";
   
@@ -82,6 +87,7 @@ export const Consulta = () => {
   return (
     <div className="h-full flex flex-col relative">
       
+      {/* 1. TOPBAR GENÉRICO */}
       <TopBar 
         title="Consulta / Guardia" 
         showButtons={true} 
@@ -91,8 +97,10 @@ export const Consulta = () => {
         onDelete={handleEliminar}
       />
 
+      {/* 2. ÁREA DEL FORMULARIO */}
       <div className="flex-1 bg-gradient-to-br from-[#e8dceb] to-[#efe6f2] rounded-3xl shadow-inner border border-white/60 p-4 lg:p-6 overflow-y-auto">
         
+        {/* PANEL 1: DATOS PERSONALES */}
         <FormCard title="Datos Personales">
           
           <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
@@ -132,14 +140,15 @@ export const Consulta = () => {
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-            <label className={labelClass}>H.C.</label>
+            <label className={labelClass}>Número historia clínica</label>
             <input type="text" name="numeroHistoriaClinica" value={formData.numeroHistoriaClinica} onChange={handleInputChange} className={`${inputClass} md:w-48`} />
             
-            <label className={labelSecondaryClass}>H.C. Anterior</label>
+            <label className={labelSecondaryClass}>Número H.C. anterior</label>
             <input type="text" name="numeroHistoriaClinicaAnterior" value={formData.numeroHistoriaClinicaAnterior} onChange={handleInputChange} className={`${inputClass} flex-1`} />
           </div>
         </FormCard>
 
+        {/* PANEL 2: DATOS LABORALES Y DE OBRA SOCIAL */}
         <FormCard title="Datos Laborales y de Obra Social">
           <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
             <label className={labelClass}>Empresa</label>
@@ -148,56 +157,75 @@ export const Consulta = () => {
 
           <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
             <label className={labelClass}>Obra Social</label>
-            <input type="text" name="obraSocial" value={formData.obraSocial} onChange={handleInputChange} className={`${inputClass} flex-1 md:w-auto`} />
-            
-            <label className={labelSecondaryClass}>N° Afiliado</label>
-            <input type="text" name="numeroAfiliado" value={formData.numeroAfiliado} onChange={handleInputChange} className={`${inputClass} flex-1 md:w-auto`} />
+            <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4">
+              <select name="obraSocial" value={formData.obraSocial} onChange={handleInputChange} className={`${selectClass} md:w-64`}>
+                <option value="">Sin dato cargado...</option>
+                <option value="IOMA">IOMA</option>
+                <option value="PAMI">PAMI</option>
+              </select>
+              <input type="text" name="numeroAfiliado" value={formData.numeroAfiliado} onChange={handleInputChange} className={`${inputClass} flex-1`} placeholder="Nro Afiliado..." />
+            </div>
           </div>
         </FormCard>
 
+        {/* PANEL 3: DATOS DE CONSULTA */}
         <FormCard title="Datos de Consulta">
           <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
             <label className={labelClass}>Fecha</label>
             <input type="date" name="fecha" value={formData.fecha} onChange={handleInputChange} className={`${inputClass} md:w-64`} />
-            
-            <label className={labelSecondaryClass}>Prioridad</label>
-            <select name="prioridad" value={formData.prioridad} onChange={handleInputChange} className={`${selectClass} flex-1`}>
-              <option>Sin prioridad</option>
-              <option>Urgencia</option>
-              <option>Emergencia</option>
-            </select>
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
             <label className={labelClass}>Servicio</label>
-            <input type="text" name="servicio" value={formData.servicio} onChange={handleInputChange} className={`${inputClass} flex-1`} />
-            
-            <label className={labelSecondaryClass}>Especialidad</label>
-            <input type="text" name="especialidad" value={formData.especialidad} onChange={handleInputChange} className={`${inputClass} flex-1`} />
+            <select name="servicio" value={formData.servicio} onChange={handleInputChange} className={`${selectClass} md:w-80`}>
+              <option value="">Seleccionar...</option>
+              <option value="1">Guardia General</option>
+              <option value="2">Pediatría</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+            <label className={labelClass}>Especialidad</label>
+            <select name="especialidad" value={formData.especialidad} onChange={handleInputChange} className={`${selectClass} md:w-80`}>
+              <option value="">Seleccionar...</option>
+              <option value="1">Clínica Médica</option>
+            </select>
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
             <label className={labelClass}>Profesional</label>
-            <input type="text" name="profesional" value={formData.profesional} onChange={handleInputChange} className={`${inputClass} flex-1`} />
+            <select name="profesional" value={formData.profesional} onChange={handleInputChange} className={`${selectClass} md:w-80`}>
+              <option value="">Seleccionar...</option>
+              <option value="1">Dr. House</option>
+            </select>
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
             <label className={labelClass}>Motivo Consulta</label>
-            <select name="motivoConsulta" value={formData.motivoConsulta} onChange={handleInputChange} className={`${selectClass} flex-1`}>
-              <option>Particular</option>
-              <option>Obra Social</option>
-              <option>ART</option>
-              <option>Accidente</option>
+            <select name="motivoConsulta" value={formData.motivoConsulta} onChange={handleInputChange} className={`${selectClass} md:w-80`}>
+              <option value="Particular">Particular</option>
+              <option value="Derivacion">Derivación</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+            <label className={labelClass}>Prioridad</label>
+            <select name="prioridad" value={formData.prioridad} onChange={handleInputChange} className={`${selectClass} md:w-80`}>
+              <option value="Sin prioridad">Sin prioridad</option>
+              <option value="Alta">Alta</option>
             </select>
           </div>
         </FormCard>
 
       </div>
 
+      {/* 3. MODAL DE BÚSQUEDA GENÉRICO */}
       <SearchModal 
         isOpen={isSearchOpen} 
-        onClose={() => setIsSearchOpen(false)}
-        onSelect={handleBuscarPaciente}
+        onClose={() => setIsSearchOpen(false)} 
+        onSearch={handleBuscarPaciente} 
+        title="Buscar Paciente" 
+        placeholder="Ingrese Nro. Documento o Nombre..." 
       />
 
     </div>
