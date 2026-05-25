@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+@theme {
+  --color-hospital-blue: #9fb3db;
+  --color-hospital-dark: #8a2be2;
+}
