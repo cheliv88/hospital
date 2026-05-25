@@ -105,7 +105,12 @@ export const AbmPersonas = () => {
       } else {
         alert(`Error al guardar: ${respuesta.status}`);
       }
-    } catch (error) { alert('Error de conexión.'); } finally { setIsLoading(false); }
+    } catch (error) { 
+      console.error(error); 
+      alert('Error de conexión.'); 
+    } finally { 
+      setIsLoading(false); 
+    }
   };
 
   const handleEliminar = async () => {
@@ -116,7 +121,12 @@ export const AbmPersonas = () => {
         const respuesta = await fetch(`http://localhost:8080/api/personas/${formData.numeroHistoriaClinica}`, { method: 'DELETE' });
         if (respuesta.ok) { alert('Persona dada de baja.'); handleNuevo(); } 
         else alert(`Error: ${respuesta.status}`);
-      } catch (error) { alert('Error de conexión.'); } finally { setIsLoading(false); }
+      } catch (error) { 
+        console.error(error); 
+        alert('Error de conexión.'); 
+      } finally { 
+        setIsLoading(false); 
+      }
     }
   };
 

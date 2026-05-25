@@ -63,6 +63,7 @@ export const HistoriaClinica = () => {
       ]);
 
     } catch (error) {
+      console.error(error);
       alert("Error al cargar la historia clínica.");
     } finally {
       setIsLoading(false);
