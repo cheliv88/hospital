@@ -10,28 +10,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout del código
+    - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Configurar Node.js
+    - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20' # Versión estable y compatible con tus dependencias
+        node-version: '20'
 
-    - name: Instalar dependencias
+    - name: Install dependencies
       run: npm install
 
-    - name: Construir la aplicación (Vite Build)
+    - name: Build application (Vite Build)
       run: npm run build
 
-    # --- PASOS DE DOCKER HUB ---
-    - name: Iniciar sesión en Docker Hub
+    - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Construir y Subir imagen Docker
+    - name: Build and Push Docker image
       run: |
         docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/hospital-frontend:latest .
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/hospital-frontend:latest
