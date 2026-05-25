@@ -1,339 +1,334 @@
-import { useState } from 'react';
-import { FaChevronDown, FaChevronUp, FaPlusCircle, FaUpload } from 'react-icons/fa';
-import { TopBar } from '../components/TopBar';
-import { SearchModal } from '../components/SearchModal';
+import { useState, useEffect } from 'react';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import { FaPlus } from 'react-icons/fa'; // Limpiamos los íconos que no usabas
+import { useAuthStore } from '../store/authStore'; 
+import { SearchModal } from '../components/SearchModal'; 
+import { SuccessModal } from '../components/SuccessModal'; 
+import { ErrorModal } from '../components/ErrorModal'; 
 
-const labelClass = "block text-[12px] font-extrabold text-[#5c3c5c] uppercase tracking-wider mb-1.5 ml-1 opacity-90";
-const inputClass = "w-full px-4 py-2.5 text-[14px] rounded-xl border-2 border-[#e0d4e3] bg-white text-[#2d1b2d] font-semibold placeholder-[#a391a3] hover:border-[#c2abc5] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#a370a3]/20 focus:border-[#a370a3] transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed";
-const selectClass = `${inputClass} appearance-none cursor-pointer bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222.5%22%20stroke%3D%22%238e5c8e%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.2em_1.2em] bg-no-repeat bg-[position:right_1rem_center] pr-10`;
+export const DarTurnos = () => {
+  const token = useAuthStore((state) => state.token);
+  const API_BASE_URL = 'http://localhost:8080/api/v1';
 
-const AccordionSection = ({ title, isOpen, onToggle, children }) => (
-  <div className="mb-4 bg-white/70 backdrop-blur-md rounded-2xl border border-white shadow-sm overflow-hidden transition-all duration-300">
-    <button type="button" onClick={onToggle} className="w-full flex justify-between items-center p-4 lg:p-5 hover:bg-white/50 transition-colors">
-      <h3 className="text-[16px] font-black text-[#c0392b] flex items-center gap-3 tracking-wide">
-        <span className={`transition-transform duration-300 ${isOpen ? 'rotate-0' : '-rotate-90'}`}><FaChevronDown className="text-sm opacity-70" /></span>
-        {title}
-      </h3>
-    </button>
-    <div className={`transition-all duration-500 ease-in-out ${isOpen ? 'max-h-[2000px] opacity-100 p-5 pt-0 border-t border-gray-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-      {children}
-    </div>
-  </div>
-);
+  const [selectedServicio, setSelectedServicio] = useState('');
+  const [selectedEspecialidad, setSelectedEspecialidad] = useState('');
+  const [selectedProfesional, setSelectedProfesional] = useState('');
+  const [rangoFechas, setRangoFechas] = useState({ desde: '', hasta: '' });
 
-const formularioEnBlanco = {
-  apellidoPaterno: '', apellidoMaterno: '', primerNombre: '', segundoNombre: '',
-  fechaNacimiento: '', horaNacimiento: '', tipoDocumento: '1', numeroDocumento: '',
-  numeroHistoriaClinica: 'Automático', numeroHistoriaClinicaAnterior: '', estadoCivil: '1',
-  sexo: 'M', nacionalidad: '1', estadoSocial: '-1', vigenciaEstadoSocial: '',
-  nivelInstruccion: '-1', activa: true, grupoSanguineo: '',
-  domicilio: '', telefono: '', email: '',
-  obraSocial: '', numeroAfiliado: '', fechaAfiliacion: '',
-  situacionLaboral: '', ocupacion: '', empresa: '', fechaIngreso: '', fechaEgreso: '',
-  padre: '', madre: '', conyuge: '',
-  fechaDeceso: '', horaDeceso: '', fallecioHospitalizada: false
-};
+  const [serviciosBD, setServiciosBD] = useState([]);
+  const [especialidadesBD, setEspecialidadesBD] = useState([]);
+  const [profesionalesBD, setProfesionalesBD] = useState([]);
+  const [eventos, setEventos] = useState([]);
+  const [cargando, setCargando] = useState(false);
 
-export const AbmPersonas = () => {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [modalAnular, setModalAnular] = useState({ isOpen: false, turnoId: null, title: '' });
+  const [motivoAnulacion, setMotivoAnulacion] = useState('1');
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [turnoPendiente, setTurnoPendiente] = useState(null);
   
-  const [openSections, setOpenSections] = useState({
-    personales: true, contacto: false, obraSocial: false,
-    laborales: false, parentesco: false, citas: false,
-    deceso: false, informes: false
-  });
+  const [successData, setSuccessModal] = useState({ isOpen: false, data: null });
+  const [errorData, setErrorModal] = useState({ isOpen: false, message: '' });
 
-  const [formData, setFormData] = useState({
-    apellidoPaterno: '', apellidoMaterno: '', primerNombre: '', segundoNombre: '',
-    fechaNacimiento: '', horaNacimiento: '', tipoDocumento: '1', numeroDocumento: '',
-    numeroHistoriaClinica: 'Automático', numeroHistoriaClinicaAnterior: '', estadoCivil: '1',
-    sexo: 'M', nacionalidad: '1', estadoSocial: '-1', vigenciaEstadoSocial: '',
-    nivelInstruccion: '-1', activa: true, grupoSanguineo: '',
-    domicilio: '', telefono: '', email: '',
-    obraSocial: '', numeroAfiliado: '', fechaAfiliacion: '',
-    situacionLaboral: '', ocupacion: '', empresa: '', fechaIngreso: '', fechaEgreso: '',
-    padre: '', madre: '', conyuge: '',
-    fechaDeceso: '', horaDeceso: '', fallecioHospitalizada: false
-  });
+  
+  useEffect(() => {
+    const fetchServicios = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/servicios`, { headers: { 'Authorization': `Bearer ${token}` }});
+        if (res.ok) setServiciosBD(await res.json());
+      } catch (e) { console.error(e); }
+    };
+    if (token) fetchServicios();
+  }, [token]);
 
-  const handleInputChange = (e) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setFormData(prev => ({ ...prev, [e.target.name]: value }));
+  useEffect(() => {
+    if (!selectedServicio) { setEspecialidadesBD([]); setProfesionalesBD([]); return; }
+    const fetchEspecialidades = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/especialidades?idServicio=${selectedServicio}`, { headers: { 'Authorization': `Bearer ${token}` }});
+        if (res.ok) setEspecialidadesBD(await res.json());
+      } catch (e) { console.error(e); }
+    };
+    if (token) fetchEspecialidades();
+  }, [selectedServicio, token]);
+
+  useEffect(() => {
+    if (!selectedEspecialidad) { setProfesionalesBD([]); return; }
+    const fetchProfesionales = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/profesionales?idEspecialidad=${selectedEspecialidad}&idServicio=${selectedServicio}`, { headers: { 'Authorization': `Bearer ${token}` }});
+        if (res.ok) setProfesionalesBD(await res.json());
+      } catch (e) { console.error(e); }
+    };
+    if (token) fetchProfesionales();
+  }, [selectedEspecialidad, selectedServicio, token]);
+
+
+  useEffect(() => {
+    if (!selectedProfesional || !rangoFechas.desde || !rangoFechas.hasta) { setEventos([]); return; }
+    
+    const fetchTurnos = async () => {
+      setCargando(true);
+      try {
+        const res = await fetch(`${API_BASE_URL}/agenda?idProfesional=${selectedProfesional}&fechaDesde=${rangoFechas.desde}&fechaHasta=${rangoFechas.hasta}`, { 
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          
+          const mapaGrupos = {};
+          data.forEach(turno => {
+            if (turno.display === 'background') {
+              mapaGrupos[`bg-${turno.id}`] = [turno];
+              return;
+            }
+            const key = `${turno.start}`;
+            if (!mapaGrupos[key]) mapaGrupos[key] = [];
+            mapaGrupos[key].push(turno);
+          });
+
+          const eventosAgrupados = Object.entries(mapaGrupos).map(([key, lista]) => {
+            const base = lista[0];
+            if (base.display === 'background') return base;
+
+            return {
+              id: `grupo-${key}`,
+              start: base.start,
+              end: base.end,
+              extendedProps: { 
+                esGrupo: true, 
+                pacientes: lista 
+              }
+            };
+          });
+
+          setEventos(eventosAgrupados);
+        }
+      } catch (e) { console.error(e); } finally { setCargando(false); }
+    };
+    if (token) fetchTurnos();
+  }, [selectedProfesional, rangoFechas, token]);
+
+  const handleDatesSet = (arg) => {
+    setRangoFechas({ desde: arg.startStr.split('T')[0], hasta: arg.endStr.split('T')[0] });
   };
 
-  const toggleSection = (section) => {
-    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  const handleDateClick = (arg) => {
+    const partesFecha = arg.dateStr.split('T');
+    setTurnoPendiente({ fecha: partesFecha[0], hora: partesFecha[1].substring(0, 5) });
+    setIsSearchModalOpen(true);
   };
 
-  const handleNuevo = () => {
-    if(window.confirm('¿Desea limpiar el formulario?')) {
-      setFormData(formularioEnBlanco); 
-    }
-  };
-
-  const handleGuardar = async () => {
-    if (!formData.numeroDocumento || !formData.primerNombre || !formData.apellidoPaterno) {
-      alert("Complete Documento, Nombre y Apellido."); return;
-    }
-    setIsLoading(true);
+  const buscarPacientes = async (tipoBusqueda, valorBuscado) => {
+    const valorLimpio = valorBuscado.trim();
+    const url = `http://localhost:8080/api/personas/buscar-avanzado?termino=${valorLimpio}`;
     try {
-      const isModificacion = formData.numeroHistoriaClinica !== 'Automático';
-      const url = isModificacion ? `http://localhost:8080/api/personas/${formData.numeroHistoriaClinica}` : `http://localhost:8080/api/personas`;
-      if (isModificacion && !formData.numeroHistoriaClinica) { alert("Error de ID."); return; }
-      
-      const payloadLimpio = { ...formData };
-      payloadLimpio.activa = payloadLimpio.activa ? 1 : 0;
-      payloadLimpio.fallecioHospitalizada = payloadLimpio.fallecioHospitalizada ? 1 : 0;
-      if (!isModificacion) payloadLimpio.numeroHistoriaClinica = 0; 
-      else payloadLimpio.numeroHistoriaClinica = parseInt(payloadLimpio.numeroHistoriaClinica, 10);
-      
-      if (payloadLimpio.estadoCivil) payloadLimpio.estadoCivil = parseInt(payloadLimpio.estadoCivil, 10);
-      if (payloadLimpio.nacionalidad) payloadLimpio.nacionalidad = parseInt(payloadLimpio.nacionalidad, 10);
-      if (payloadLimpio.estadoSocial === "-1" || payloadLimpio.estadoSocial === -1) payloadLimpio.estadoSocial = null;
-      else if (payloadLimpio.estadoSocial) payloadLimpio.estadoSocial = parseInt(payloadLimpio.estadoSocial, 10);
-      if (payloadLimpio.nivelInstruccion === "-1" || payloadLimpio.nivelInstruccion === -1) payloadLimpio.nivelInstruccion = null;
-      else if (payloadLimpio.nivelInstruccion) payloadLimpio.nivelInstruccion = parseInt(payloadLimpio.nivelInstruccion, 10);
+      const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` }});
+      if (res.ok) return await res.json();
+      return [];
+    } catch (error) { return []; }
+  };
 
-      Object.keys(payloadLimpio).forEach(key => { if (payloadLimpio[key] === "") payloadLimpio[key] = null; });
+  const asignarTurno = async (persona) => {
+    setIsSearchModalOpen(false);
+    const idPaciente = persona.idEntidad || persona.numeroHistoriaClinica;
 
-      const respuesta = await fetch(url, { method: isModificacion ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadLimpio) });
-      if (respuesta.ok) {
-        const datosServidor = await respuesta.json();
-        alert('¡Guardado exitoso!');
-        if (!isModificacion && datosServidor.numeroHistoriaClinica) setFormData(prev => ({ ...prev, numeroHistoriaClinica: datosServidor.numeroHistoriaClinica }));
+    const payload = {
+      idPaciente: parseInt(idPaciente, 10),
+      idProfesional: parseInt(selectedProfesional, 10),
+      idServicio: parseInt(selectedServicio, 10),
+      fecha: turnoPendiente.fecha,
+      hora: turnoPendiente.hora
+    };
+
+    try {
+      setCargando(true);
+      const res = await fetch(`${API_BASE_URL}/agenda`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const turnoAsignado = await res.json();
+        setSuccessModal({ isOpen: true, data: turnoAsignado });
+        setRangoFechas({...rangoFechas}); 
       } else {
-        alert(`Error al guardar: ${respuesta.status}`);
+        const errorMsg = await res.text();
+        throw new Error(errorMsg || "Error al asignar el turno.");
       }
     } catch (error) { 
-      console.error(error); 
-      alert('Error de conexión.'); 
+      setErrorModal({ isOpen: true, message: error.message });
     } finally { 
-      setIsLoading(false); 
+      setCargando(false); 
+      setTurnoPendiente(null); 
     }
   };
 
-  const handleEliminar = async () => {
-    if (formData.numeroHistoriaClinica === 'Automático' || !formData.numeroHistoriaClinica) return alert('Busque una persona primero.');
-    if(window.confirm('¿Dar de baja a esta persona?')) {
-      setIsLoading(true);
-      try {
-        const respuesta = await fetch(`http://localhost:8080/api/personas/${formData.numeroHistoriaClinica}`, { method: 'DELETE' });
-        if (respuesta.ok) { alert('Persona dada de baja.'); handleNuevo(); } 
-        else alert(`Error: ${respuesta.status}`);
-      } catch (error) { 
-        console.error(error); 
-        alert('Error de conexión.'); 
-      } finally { 
-        setIsLoading(false); 
-      }
-    }
-  };
-
-
-  const columnasPersonas = [
-    { header: 'Nro. Documento', key: 'numeroDocumento' },
-    { header: 'Apellido Paterno', key: 'apellidoPaterno' },
-    { header: 'Primer Nombre', key: 'primerNombre' },
-    { header: 'H. Clínica', key: 'numeroHistoriaClinica' },
-    { header: 'Fecha Nac.', key: 'fechaNacimiento' }
-  ];
-
-  const fetchResultadosPersona = async (tipoBusqueda, valorBuscado) => {
-    
-    const url = `http://localhost:8080/api/personas/buscar-avanzado?termino=${valorBuscado}`;
-    
-    console.log("Haciendo GET a:", url); // Para que lo veas en la consola (F12)
-
+  const confirmarAnulacion = async () => {
     try {
-      const respuesta = await fetch(url);
+      setCargando(true);
+      const res = await fetch(`${API_BASE_URL}/agenda/${modalAnular.turnoId}?idMotivo=${motivoAnulacion}`, {
+        method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
+      });
       
-      if (respuesta.ok) {
-        return await respuesta.json(); 
-      } else if (respuesta.status === 404) {
-        return [];
+      if (res.ok) {
+        setRangoFechas({...rangoFechas}); 
+        setModalAnular({ isOpen: false, turnoId: null, title: '' });
       } else {
-        const errorText = await respuesta.text();
-        console.error("Error del Backend en el GET:", errorText);
-        return [];
+        const errorMsg = await res.text();
+        throw new Error(errorMsg || "No se pudo anular el turno.");
       }
-    } catch (error) {
-      console.error("Error de red en búsqueda:", error);
-      throw error;
+    } catch (error) { 
+      setErrorModal({ isOpen: true, message: error.message });
+    } finally { 
+      setCargando(false); 
     }
   };
-  const handleSeleccionarDesdeTabla = (personaSeleccionada) => {
-    
-    const personaLimpia = {};
-    Object.keys(personaSeleccionada).forEach(key => {
-      personaLimpia[key] = personaSeleccionada[key] === null ? "" : personaSeleccionada[key];
-    });
 
-    setFormData({ ...formularioEnBlanco, ...personaLimpia }); 
-    
-    setIsSearchOpen(false);
+  const getEstiloPacientePorDia = (fecha) => {
+    const dia = new Date(fecha).getDay();
+    const estilos = {
+      0: 'bg-[#0ea5e9]', 1: 'bg-[#8b5cf6]', 2: 'bg-[#f43f5e]', 
+      3: 'bg-[#10b981]', 4: 'bg-[#f59e0b]', 5: 'bg-[#06b6d4]', 6: 'bg-[#6366f1]'
+    };
+    return estilos[dia] || 'bg-slate-500';
+  };
+
+  const renderizarEvento = (info) => {
+    const { esGrupo, pacientes, tipo, mensaje } = info.event.extendedProps;
+
+    if (tipo === 'fondo') return <div className="w-full h-full bg-gray-100 flex items-center justify-center opacity-50 font-bold text-[10px] uppercase">{mensaje}</div>;
+
+    if (esGrupo) {
+      const colorClase = getEstiloPacientePorDia(info.event.start);
+      return (
+        <div className="w-full flex flex-col gap-1 p-0.5 overflow-visible">
+          {pacientes.map(p => (
+            <div 
+              key={p.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                setModalAnular({ isOpen: true, turnoId: p.id, title: p.title });
+              }}
+              className={`${colorClase} text-white text-[10px] font-bold p-1 rounded border-l-4 border-black/20 shadow-sm hover:brightness-110 cursor-pointer whitespace-nowrap overflow-hidden transition-all`}
+            >
+              {p.title}
+            </div>
+          ))}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDateClick({ dateStr: info.event.startStr });
+            }}
+            className="w-full py-0.5 bg-white/40 hover:bg-white/60 border border-dashed border-white rounded text-[10px] text-[#4a2b4a] font-bold flex items-center justify-center gap-1 transition-colors"
+          >
+            <FaPlus size={8} /> SOBRETURNO
+          </button>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
-    <div className="h-full flex flex-col relative">
-      
-      {isLoading && (
-        <div className="absolute top-0 left-0 w-full h-1 bg-[#e8dceb] z-50 overflow-hidden rounded-t-3xl">
-          <div className="w-1/3 h-full bg-[#a370a3] animate-pulse rounded-full"></div>
+    <div className="flex flex-col h-full w-full relative bg-white/60 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/80 p-5 md:p-6 overflow-hidden">
+      {cargando && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/30 backdrop-blur-[2px]">
+          <div className="w-10 h-10 border-4 border-[#a370a3] border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
 
-      <TopBar 
-        title="ABM Personas" 
-        showButtons={true} 
-        onSearch={() => setIsSearchOpen(true)}
-        onNew={handleNuevo}
-        onSave={handleGuardar}
-        onDelete={handleEliminar}
-      />
-
-      <div className={`flex-1 bg-gradient-to-br from-[#e8dceb] to-[#efe6f2] rounded-3xl shadow-inner border border-white/60 p-4 lg:p-6 overflow-y-auto transition-opacity ${isLoading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-        
-        <AccordionSection title="Datos Personales" isOpen={openSections.personales} onToggle={() => toggleSection('personales')}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5 pt-4">
-             <div className="flex flex-col"><label className={labelClass}>Apellido Paterno</label><input type="text" name="apellidoPaterno" value={formData.apellidoPaterno} onChange={handleInputChange} className={inputClass} /></div>
-             <div className="flex flex-col"><label className={labelClass}>Apellido Materno</label><input type="text" name="apellidoMaterno" value={formData.apellidoMaterno} onChange={handleInputChange} className={inputClass} /></div>
-             <div className="flex flex-col"><label className={labelClass}>Primer Nombre</label><input type="text" name="primerNombre" value={formData.primerNombre} onChange={handleInputChange} className={inputClass} /></div>
-             <div className="flex flex-col"><label className={labelClass}>Segundo Nombre</label><input type="text" name="segundoNombre" value={formData.segundoNombre} onChange={handleInputChange} className={inputClass} /></div>
-             
-             <div className="flex flex-col"><label className={labelClass}>Tipo Documento</label><select name="tipoDocumento" value={formData.tipoDocumento} onChange={handleInputChange} className={selectClass}><option value="1">DNI</option><option value="2">Pasaporte</option></select></div>
-             <div className="flex flex-col"><label className={labelClass}>Nro. Documento</label><input type="text" name="numeroDocumento" value={formData.numeroDocumento} onChange={handleInputChange} className={inputClass} /></div>
-             <div className="flex flex-col"><label className={labelClass}>Fecha de Nac.</label><input type="date" name="fechaNacimiento" value={formData.fechaNacimiento} onChange={handleInputChange} className={inputClass} /></div>
-             <div className="flex flex-col"><label className={labelClass}>Hora de Nac.</label><input type="time" name="horaNacimiento" value={formData.horaNacimiento} onChange={handleInputChange} className={inputClass} /></div>
-             
-             <div className="flex flex-col"><label className={labelClass}>Nro. Historia Clínica</label><input type="text" disabled value={formData.numeroHistoriaClinica} className={`${inputClass} bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed`} /></div>
-             <div className="flex flex-col"><label className={labelClass}>Nro. H.C. Anterior</label><input type="text" name="numeroHistoriaClinicaAnterior" value={formData.numeroHistoriaClinicaAnterior} onChange={handleInputChange} className={inputClass} /></div>
-             <div className="flex flex-col"><label className={labelClass}>Estado Civil</label><select name="estadoCivil" value={formData.estadoCivil} onChange={handleInputChange} className={selectClass}><option value="1">Soltero/a</option><option value="2">Casado/a</option></select></div>
-             
-             <div className="flex flex-col"><label className={labelClass}>Sexo</label>
-               <div className="flex items-center gap-6 h-[46px] px-4 bg-white rounded-xl border-2 border-[#e0d4e3]">
-                 <label className="flex items-center gap-2 text-[14px] text-[#2d1b2d] font-semibold cursor-pointer"><input type="radio" name="sexo" value="M" checked={formData.sexo === 'M'} onChange={handleInputChange} className="accent-[#a370a3] w-4 h-4 scale-110" /> Masculino</label>
-                 <label className="flex items-center gap-2 text-[14px] text-[#2d1b2d] font-semibold cursor-pointer"><input type="radio" name="sexo" value="F" checked={formData.sexo === 'F'} onChange={handleInputChange} className="accent-[#a370a3] w-4 h-4 scale-110" /> Femenino</label>
-               </div>
-             </div>
-
-             <div className="flex flex-col"><label className={labelClass}>Nacionalidad</label><select name="nacionalidad" value={formData.nacionalidad} onChange={handleInputChange} className={selectClass}><option value="1">Argentina</option><option value="2">Extranjero</option></select></div>
-             <div className="flex flex-col"><label className={labelClass}>Estado Social</label><select name="estadoSocial" value={formData.estadoSocial} onChange={handleInputChange} className={selectClass}><option value="-1">Sin definir...</option><option value="1">Activo</option></select></div>
-             <div className="flex flex-col"><label className={labelClass}>Vigencia Estado Soc.</label><input type="date" name="vigenciaEstadoSocial" value={formData.vigenciaEstadoSocial} onChange={handleInputChange} className={inputClass} /></div>
-             <div className="flex flex-col"><label className={labelClass}>Nivel Instrucción</label><select name="nivelInstruccion" value={formData.nivelInstruccion} onChange={handleInputChange} className={selectClass}><option value="-1">Seleccionar...</option><option value="1">Primario</option><option value="2">Secundario</option></select></div>
-             
-             <div className="flex flex-col"><label className={labelClass}>Grupo Sanguíneo</label><select name="grupoSanguineo" value={formData.grupoSanguineo} onChange={handleInputChange} className={selectClass}><option value="">Indique...</option><option value="A|+">A+</option><option value="A|-">A-</option><option value="B|+">B+</option><option value="O|+">O+</option></select></div>
-             
-             <div className="flex flex-col justify-end pb-1.5"><label className="flex items-center gap-3 text-[14px] text-green-700 font-bold cursor-pointer bg-green-500/10 h-[46px] px-4 rounded-xl border-2 border-green-500/30 w-max hover:bg-green-500/20 transition-colors"><input type="checkbox" name="activa" checked={formData.activa} onChange={handleInputChange} className="w-5 h-5 accent-green-600 rounded" /> Persona Activa</label></div>
-          </div>
-        </AccordionSection>
-
-        <AccordionSection title="Datos de contacto" isOpen={openSections.contacto} onToggle={() => toggleSection('contacto')}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-            <div className="flex flex-col">
-              <label className={labelClass}>Domicilio</label>
-              <div className="flex gap-2">
-                <input type="text" name="domicilio" value={formData.domicilio} onChange={handleInputChange} className={inputClass} />
-                <button title="Añadir" className="bg-[#a370a3]/10 text-[#a370a3] px-3 rounded-xl border-2 border-[#a370a3]/20 hover:bg-[#a370a3] hover:text-white transition-colors"><FaPlusCircle size={18}/></button>
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <label className={labelClass}>Teléfono</label>
-              <div className="flex gap-2">
-                <input type="text" name="telefono" value={formData.telefono} onChange={handleInputChange} className={inputClass} />
-                <button title="Añadir" className="bg-[#a370a3]/10 text-[#a370a3] px-3 rounded-xl border-2 border-[#a370a3]/20 hover:bg-[#a370a3] hover:text-white transition-colors"><FaPlusCircle size={18}/></button>
-              </div>
-            </div>
-            <div className="flex flex-col"><label className={labelClass}>Email</label><input type="email" name="email" value={formData.email} onChange={handleInputChange} className={inputClass} /></div>
-          </div>
-        </AccordionSection>
-
-        <AccordionSection title="Datos de Obra Social" isOpen={openSections.obraSocial} onToggle={() => toggleSection('obraSocial')}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-            <div className="flex flex-col"><label className={labelClass}>Obra Social</label>
-              <select name="obraSocial" value={formData.obraSocial} onChange={handleInputChange} className={selectClass}>
-                <option value="">Seleccionar...</option>
-                <option value="IOMA">IOMA</option>
-                <option value="PAMI">INSSJYP (PAMI)</option>
-                <option value="OSDE">OSDE</option>
-                <option value="GALENO">GALENO</option>
-              </select>
-            </div>
-            <div className="flex flex-col"><label className={labelClass}>Número afiliado</label><input type="text" name="numeroAfiliado" value={formData.numeroAfiliado} onChange={handleInputChange} className={inputClass} /></div>
-            <div className="flex flex-col"><label className={labelClass}>Fecha afiliación</label><input type="date" name="fechaAfiliacion" value={formData.fechaAfiliacion} onChange={handleInputChange} className={inputClass} /></div>
-          </div>
-        </AccordionSection>
-
-        <AccordionSection title="Datos Laborales" isOpen={openSections.laborales} onToggle={() => toggleSection('laborales')}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-            <div className="flex flex-col"><label className={labelClass}>Situación laboral</label>
-              <select name="situacionLaboral" value={formData.situacionLaboral} onChange={handleInputChange} className={selectClass}>
-                <option value="">Sin definir...</option>
-                <option value="1">Trabaja o está de licencia</option>
-                <option value="2">No trabaja y busca trabajo</option>
-                <option value="3">No trabaja y no busca trabajo</option>
-              </select>
-            </div>
-            <div className="flex flex-col"><label className={labelClass}>Ocupación habitual</label><input type="text" name="ocupacion" value={formData.ocupacion} onChange={handleInputChange} className={inputClass} /></div>
-            <div className="flex flex-col"><label className={labelClass}>Empresa</label><input type="text" name="empresa" value={formData.empresa} onChange={handleInputChange} className={inputClass} /></div>
-            <div className="flex flex-col"><label className={labelClass}>Fecha Ingreso</label><input type="date" name="fechaIngreso" value={formData.fechaIngreso} onChange={handleInputChange} className={inputClass} /></div>
-            <div className="flex flex-col"><label className={labelClass}>Fecha Egreso</label><input type="date" name="fechaEgreso" value={formData.fechaEgreso} onChange={handleInputChange} className={inputClass} /></div>
-          </div>
-        </AccordionSection>
-
-        <AccordionSection title="Parentesco" isOpen={openSections.parentesco} onToggle={() => toggleSection('parentesco')}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-            <div className="flex flex-col"><label className={labelClass}>Padre</label><input type="text" name="padre" placeholder="Buscar..." value={formData.padre} onChange={handleInputChange} className={inputClass} /></div>
-            <div className="flex flex-col"><label className={labelClass}>Madre</label><input type="text" name="madre" placeholder="Buscar..." value={formData.madre} onChange={handleInputChange} className={inputClass} /></div>
-            <div className="flex flex-col"><label className={labelClass}>Cónyuge</label><input type="text" name="conyuge" placeholder="Buscar..." value={formData.conyuge} onChange={handleInputChange} className={inputClass} /></div>
-          </div>
-        </AccordionSection>
-
-        <AccordionSection title="Citas/Internaciones" isOpen={openSections.citas} onToggle={() => toggleSection('citas')}>
-          <div className="pt-4">
-            <button className="flex items-center gap-2 bg-[#a370a3]/10 text-[#a370a3] border-2 border-[#a370a3]/30 px-6 py-3 rounded-xl font-bold hover:bg-[#a370a3] hover:text-white transition-all">
-              <FaPlusCircle /> Agregar nueva cita
-            </button>
-          </div>
-        </AccordionSection>
-
-        <AccordionSection title="Datos de Deceso" isOpen={openSections.deceso} onToggle={() => toggleSection('deceso')}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 items-center">
-            <div className="flex flex-col"><label className={labelClass}>Fecha deceso</label><input type="date" name="fechaDeceso" value={formData.fechaDeceso} onChange={handleInputChange} className={inputClass} /></div>
-            <div className="flex flex-col"><label className={labelClass}>Hora</label><input type="time" name="horaDeceso" value={formData.horaDeceso} onChange={handleInputChange} className={inputClass} /></div>
-            <div className="flex flex-col justify-end pt-5">
-              <label className="flex items-center gap-3 text-[14px] text-[#4a2b4a] font-bold cursor-pointer bg-white p-3 rounded-xl border-2 border-[#e0d4e3]">
-                <input type="checkbox" name="fallecioHospitalizada" checked={formData.fallecioHospitalizada} onChange={handleInputChange} className="w-5 h-5 accent-[#a370a3] rounded" /> 
-                Falleció Hospitalizada
-              </label>
-            </div>
-          </div>
-        </AccordionSection>
-
-        <AccordionSection title="Otros informes" isOpen={openSections.informes} onToggle={() => toggleSection('informes')}>
-          <div className="pt-4">
-            <label className={labelClass}>Archivo PDF</label>
-            <div className="mt-2 flex items-center justify-center w-full md:w-1/2">
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-[#a370a3]/30 border-dashed rounded-xl cursor-pointer bg-white/50 hover:bg-white/80 hover:border-[#a370a3]/60 transition-colors">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <FaUpload className="text-[#a370a3] mb-3" size={28} />
-                  <p className="text-[14px] text-[#6b4c6b] font-bold">Haz clic para subir un PDF</p>
-                </div>
-                <input type="file" className="hidden" accept=".pdf" />
-              </label>
-            </div>
-          </div>
-        </AccordionSection>
-
+      <div className="flex flex-col xl:flex-row justify-between xl:items-center gap-4 mb-4 shrink-0">
+        <h1 className="text-2xl md:text-3xl font-black text-[#4a2b4a] tracking-tighter">Gestión de Turnos</h1>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full xl:w-auto xl:flex-1 xl:max-w-4xl">
+          <select className="rounded-xl border-2 border-white/50 bg-white/80 px-4 py-2 text-sm font-semibold text-gray-700 outline-none" value={selectedServicio} onChange={(e) => { setSelectedServicio(e.target.value); setSelectedEspecialidad(''); setSelectedProfesional(''); }}>
+            <option value="">Servicio...</option>
+            {serviciosBD.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+          </select>
+          <select className="rounded-xl border-2 border-white/50 bg-white/80 px-4 py-2 text-sm font-semibold text-gray-700 outline-none" value={selectedEspecialidad} onChange={(e) => { setSelectedEspecialidad(e.target.value); setSelectedProfesional(''); }} disabled={!selectedServicio}>
+            <option value="">Especialidad...</option>
+            {especialidadesBD.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+          </select>
+          <select className="rounded-xl border-2 border-white/50 bg-white/80 px-4 py-2 text-sm font-semibold text-gray-700 outline-none" value={selectedProfesional} onChange={(e) => setSelectedProfesional(e.target.value)} disabled={!selectedEspecialidad}>
+            <option value="">Profesional...</option>
+            {profesionalesBD.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+          </select>
+        </div>
       </div>
 
+      <div className="flex-1 overflow-hidden flex flex-col relative rounded-2xl bg-white/40 border border-white/50">
+        <style>{`
+          .fc-timegrid-slot { height: 4.5rem !important; }
+          .fc-timegrid-event-harness { height: auto !important; min-height: 20px; }
+          .fc-timegrid-event { 
+            background: transparent !important; 
+            border: none !important; 
+            box-shadow: none !important; 
+            overflow: visible !important;
+          }
+          .fc-event-main-frame { height: auto !important; }
+          .fc-timegrid-col-events { margin-right: 30px !important; } 
+          .fc-v-event { position: relative !important; display: block !important; }
+        `}</style>
+        
+        <FullCalendar
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          initialView="timeGridWeek"
+          locale="es"
+          headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }}
+          slotDuration="00:15:00"
+          slotMinTime="08:00:00"
+          slotMaxTime="18:00:00"
+          allDaySlot={false}
+          events={eventos}
+          eventContent={renderizarEvento}
+          datesSet={handleDatesSet}
+          dateClick={handleDateClick}
+          height="100%"
+          expandRows={true}
+        />
+      </div>
+
+      {modalAnular.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-8 shadow-2xl max-w-sm w-full mx-4">
+            <h3 className="text-2xl font-black text-[#4a2b4a] mb-2 tracking-tighter">Anular Turno</h3>
+            <p className="text-sm text-gray-600 mb-6 font-bold">{modalAnular.title}</p>
+            <select className="w-full rounded-xl border-2 border-gray-200 bg-gray-50 px-4 py-2.5 mb-6 font-semibold" value={motivoAnulacion} onChange={(e) => setMotivoAnulacion(e.target.value)}>
+              <option value="1">Paciente no asistió</option>
+              <option value="2">Cancelado por profesional</option>
+            </select>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setModalAnular({ isOpen: false, turnoId: null, title: '' })} className="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-100">Cerrar</button>
+              <button onClick={confirmarAnulacion} className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#f43f5e] shadow-lg">Confirmar Anulación</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <SearchModal 
-        isOpen={isSearchOpen} 
-        onClose={() => setIsSearchOpen(false)} 
-        title="Buscar Personas"
-        columns={columnasPersonas} 
-        onSearchData={fetchResultadosPersona} 
-        onSelectRecord={handleSeleccionarDesdeTabla} 
+        isOpen={isSearchModalOpen} 
+        onClose={() => { setIsSearchModalOpen(false); setTurnoPendiente(null); }}
+        onSearchData={buscarPacientes} 
+        onSelectRecord={asignarTurno} 
+        columns={[{ header: 'Doc.', key: 'numeroDocumento' }, { header: 'Apellido', key: 'apellidoPaterno' }, { header: 'Nombre', key: 'primerNombre' }]} 
+        title="Buscar Paciente para Turno"
+      />
+
+      <SuccessModal 
+        isOpen={successData.isOpen} 
+        data={successData.data} 
+        onClose={() => setSuccessModal({ isOpen: false, data: null })}
+      />
+
+      <ErrorModal 
+        isOpen={errorData.isOpen} 
+        errorMessage={errorData.message} 
+        onClose={() => setErrorModal({ isOpen: false, message: '' })}
       />
 
     </div>
